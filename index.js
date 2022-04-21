@@ -1,9 +1,12 @@
 const axios = require('axios');
 const express = require('express');
+const morgan = require('morgan');
 const sharp = require('sharp');
 require('dotenv').config();
 
 const app = express();
+
+app.use(morgan('tiny'));
 
 app.get('/:filename', async (req, res) => {
   const { filename } = req.params;
@@ -20,16 +23,22 @@ app.get('/:filename', async (req, res) => {
     const buffer = Buffer.from(data, 'base64');
 
     const transformed = await sharp(buffer)
-      .resize({ width, height })
-      .toFormat(format)
+      .resize({
+        width,
+        height,
+        withoutEnlargement: true,
+      })
+      .toFormat(format, { quality: 100 })
       .toBuffer();
 
     res.set('Content-Type', `image/${format}`);
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.send(transformed);
-
+    return res.send(transformed);
   } catch (error) {
-    res.json(error);
+    console.log(error);
+    res.json({
+      message: error.message,
+    });
   }
 });
 
